@@ -13,7 +13,10 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.commons.lang3.ArrayUtils;
@@ -23,6 +26,7 @@ import org.apache.commons.lang3.ArrayUtils;
  * @author the_fegati
  */
 public class CSVPreprocessor {
+    static List<String[]> data = new ArrayList<>();
 
     public static final int HEADER_INDEX = 0;
     public static final String DEFAULT_EMPTY_VALUE = "";
@@ -38,8 +42,9 @@ public class CSVPreprocessor {
      * @throws IOException - Thrown while failed to access file
      *
      */
-    public static File execute(String filePath) throws IOException {
-        return execute(new File(filePath));
+    public static List<String[]> execute(String filePath) throws IOException {
+        data = execute(new File(filePath));
+        return data;
     }
 
     /**
@@ -50,12 +55,21 @@ public class CSVPreprocessor {
      * @return The processed temporary CSV file
      * @throws IOException - Thrown while failed to access file
      */
-    public static File execute(File file) throws IOException {
 
+    public static List<String[]>  execute(File file) throws IOException {
+        List<String[]> temp = new ArrayList<>();
         if (file.exists()) {
-            return preprocessCSVFile(file);
+            temp =  preprocessCSVFile(file);
         }
-        return file;
+        return temp;
+    }
+
+    public String[] getHeader(){
+        String[] array = new String[data.get(0).length];
+        for(String item: data.get(0)){
+            array = item.split(",");
+        }
+        return array;
     }
 
     /**
@@ -66,31 +80,17 @@ public class CSVPreprocessor {
      * @return The processed temporary CSV file
      * @throws IOException - Thrown while failed to access file
      */
-    private static File preprocessCSVFile(File file) throws IOException {
+    private static List<String[]> preprocessCSVFile(File file) throws IOException {
         List<String[]> rows = readAllRowsFromCSVFile(file);
-        /* Remove all the tailing empty string */
-		//cleanTailingEmptyStrings(rows);
 
-        /**
-         * Remove unwanted columns
-         */
         LOGGER.log(Level.INFO, "Whole file read");
         System.out.println(rows.size());
-//                removeUnwantedColumns(rows, 2);
-//                LOGGER.log(Level.INFO, "Deleted Column 2");
-//                removeUnwantedColumns(rows, 4);
-//                LOGGER.log(Level.INFO, "Deleted Column 4");
-//                removeUnwantedColumns(rows, 5);
-//                LOGGER.log(Level.INFO, "Deleted Column 5");
-//                removeUnwantedColumns(rows, 6);
-//                removeUnwantedColumns(rows, 10);
-//                removeUnwantedColumns(rows, 12);
-//                removeUnwantedColumns(rows, 13);
-//                removeUnwantedColumns(rows, 14);
-        List<String[]> cleanRows = removeUnwantedRows(rows);
 
         /* Get the highest column size */
-        int columnSize = validateColumnSize(cleanRows);
+        int columnSize = validateColumnSize(rows);
+        for (String[] row:rows){
+            System.out.println(ArrayUtils.toString(row));
+        }
 
         /* balance all the rows with the same column size */
 		//balanceColumnsSizeOfTheRows(rows, columnSize);
@@ -98,9 +98,9 @@ public class CSVPreprocessor {
 		//titleHeader(rows);
         /* Create a temporary CSV file with the processed CSV contents */
         File processedFile = new File("/home/the_fegati/Downloads/FelixData/Batch1/preprocessed_labs.csv");
-        writeRowToCSVFile(processedFile, cleanRows, columnSize);
-
-        return processedFile;
+        //writeRowToCSVFile(processedFile, rows, columnSize);
+        //return processedFile;
+        return rows;
     }
 
     /*
@@ -167,44 +167,6 @@ public class CSVPreprocessor {
             return ArrayUtilities.copyOf(row, cuttedIndex);
         }
         return row;
-    }
-
-    /**
-     * remove rows that contain certain values uses simple string matching
-     *
-     * @param rows
-     */
-
-    private static List<String[]> removeUnwantedRows(List<String[]> rows) {
-        for (int i = 0; i < rows.size(); i++) {
-            if (removeIfUnwanted(rows.get(i))) {
-                rows.remove(i);
-//                        System.out.println(rows.remove(i));
-            }
-        }
-        System.out.println(rows.size());
-        return rows;
-    }
-
-    private static boolean removeIfUnwanted(String[] row) {
-        String testName = row[5];
-        if (testName.contains("Albumins") || testName.contains("Appearance")
-                || testName.contains("ALKP") || testName.equals("ASC") || testName.equals("AST")
-                || testName.equals("Bilirubin") || testName.equals("Bilirubin_urinalysis") || testName.equals("BilirubinTotals")
-                || testName.equals("Blood") || testName.equals("Ca") || testName.equals("Cast_cells") || testName.equals("Cd4cd8Ratio")
-                || testName.equals("cd8") || testName.equals("Cl") || testName.equals("Color") || testName.equals("CryptoccocalScreening")
-                || testName.equals("Crystals") || testName.equals("Epithelial_Cells") || testName.equals("FREE_THYROXINE_T4")
-                || testName.equals("FREE_TRI_IODOTHYRONINE_T3") || testName.equals("THYROTROPIN_TSH_S") || testName.equals("GAMMAGT")
-                || testName.equals("Glucose_Urinalysis") || testName.equals("Isoniazid_H") || testName.equals("K")
-                || testName.equals("LAC") || testName.equals("LacticAcidiosis") || testName.equals("LDL") || testName.equals("Na") || testName.equals("Nitrite")
-                || testName.equals("Parasites_Blood_Slide") || testName.equals("Parasites_Urinalysis") || testName.equals("PCRResult")
-                || testName.equals("PH") || testName.equals("Protein") || testName.equals("Pus_Cells") || testName.equals("RedBlood_Cells")
-                || testName.equals("RH") || testName.equals("Rifampicin_R") || testName.equals("Serological") || testName.equals("SerumAmylase")
-                || testName.equals("SG") || testName.equals("TotalProtein") || testName.equals("Tuberculosis") || testName.equals("Yeast_Cells")) {
-            return true;
-        } else {
-            return false;
-        }
     }
 
     public static void removeUnwantedColumns(List<String[]> rows, int index) {
